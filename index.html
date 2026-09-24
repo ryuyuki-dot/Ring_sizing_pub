@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>リングサイズメジャー</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1B1A17">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1B1A17; --surface:#242220; --surface2:#2E2B27; --border:#3A362F;
+  --text:#EDE6D8; --muted:#948D7D; --accent:#C9A15C; --accent-ink:#1B1A17;
+  --good:#7C9B72; --line: rgba(201,161,92,0.14);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F7F3EA; --surface:#FFFFFF; --surface2:#F0EAD9; --border:#E1D8C2;
+    --text:#241F17; --muted:#847B67; --accent:#A9803D; --accent-ink:#FFFFFF;
+    --good:#5C7A54; --line: rgba(169,128,61,0.16);
+  }
+}
+:root[data-theme="dark"]{ --bg:#1B1A17; --surface:#242220; }
+*{box-sizing:border-box;}
+html,body{height:100%;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Manrope',system-ui,-apple-system,sans-serif;
+  display:flex; flex-direction:column; min-height:100%;
+}
+header{
+  padding:18px 20px 14px; padding-top:calc(18px + env(safe-area-inset-top,0px));
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+}
+#installBtn{display:none; white-space:nowrap;}
+header h1{
+  font-family:'Fraunces',serif; font-weight:500; font-size:22px; margin:0;
+  letter-spacing:0.2px;
+}
+header p{margin:4px 0 0; font-size:13px; color:var(--muted);}
+main{flex:1; padding:20px; padding-bottom:100px; max-width:520px; width:100%; margin:0 auto;}
+section{display:none;}
+section.active{display:block;}
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:20px; margin-bottom:16px;
+}
+.muted{color:var(--muted); font-size:13.5px; line-height:1.6;}
+
+/* calibration */
+.calib-stage{
+  background:var(--surface2); border:1px dashed var(--border); border-radius:12px;
+  display:flex; align-items:center; justify-content:center; padding:28px 10px; margin:16px 0;
+}
+.calib-card{
+  height:0; aspect-ratio:85.6/53.98; background:var(--accent); border-radius:6px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+}
+
+/* grid & ring */
+.gridbox{
+  border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:16px 0;
+  height:230px; position:relative; display:flex; align-items:center; justify-content:center;
+  background-color:var(--surface2);
+}
+.gridbox .ring{
+  border:3px solid var(--accent); border-radius:50%; background:rgba(201,161,92,0.06);
+  transition:width .05s linear, height .05s linear;
+}
+input[type=range]{
+  width:100%; -webkit-appearance:none; appearance:none; height:34px; background:transparent;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px; background:var(--border); border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; margin-top:-11px; width:26px; height:26px; border-radius:50%;
+  background:var(--accent); border:3px solid var(--surface); box-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+input[type=range]::-moz-range-track{height:4px; background:var(--border); border-radius:2px;}
+input[type=range]::-moz-range-thumb{
+  width:20px; height:20px; border-radius:50%; background:var(--accent); border:3px solid var(--surface);
+}
+
+.readout{display:flex; align-items:baseline; gap:10px; margin:14px 0 4px; flex-wrap:wrap;}
+.readout .us{font-family:'Fraunces',serif; font-size:44px; line-height:1; color:var(--accent);}
+.readout .mm{font-size:14px; color:var(--muted);}
+.badge{
+  display:inline-block; font-size:12px; padding:3px 9px; border-radius:20px;
+  background:var(--line); color:var(--accent); margin-top:6px;
+}
+
+button{
+  font-family:inherit; font-size:14.5px; font-weight:600; border:none; border-radius:10px;
+  padding:12px 16px; cursor:pointer; background:var(--accent); color:var(--accent-ink);
+}
+button.ghost{background:transparent; color:var(--text); border:1px solid var(--border); font-weight:500;}
+button.small{padding:7px 11px; font-size:13px; border-radius:8px;}
+button:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.row{display:flex; gap:10px; flex-wrap:wrap;}
+
+/* account/history */
+label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px;}
+input[type=text], input[type=number]{
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:10px 12px; border-radius:10px; font-size:14.5px; font-family:inherit;
+}
+.hist-item{
+  border-top:1px solid var(--border); padding:14px 0;
+}
+.hist-item:first-child{border-top:none;}
+.hist-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.hist-date{font-size:12.5px; color:var(--muted);}
+.hist-size{font-family:'Fraunces',serif; font-size:20px;}
+.hist-sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+.correct-note{font-size:12.5px; color:var(--good); margin-top:6px;}
+.manual-box{display:flex; gap:8px; margin-top:8px;}
+.manual-box input{width:90px;}
+.empty{color:var(--muted); font-size:13.5px; padding:8px 0;}
+
+nav{
+  position:fixed; left:0; right:0; bottom:0; background:var(--surface);
+  border-top:1px solid var(--border); display:flex; padding:8px 14px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+}
+nav button{
+  flex:1; background:transparent; color:var(--muted); font-weight:600; font-size:13px;
+  padding:9px 6px; border-radius:10px;
+}
+nav button.active{color:var(--accent); background:var(--line);}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>リングサイズメジャー</h1>
+    <p id="subhead">画面上で指のサイズを測り、USリングサイズを算出します</p>
+  </div>
+  <button class="ghost small" id="installBtn">ホーム画面に追加</button>
+</header>
+
+<main>
+  <section id="sizing" class="active">
+    <div id="calibPane" class="card">
+      <strong>はじめにキャリブレーション</strong>
+      <p class="muted">お手持ちのICカード（クレジットカードなど・幅85.6mm）を画面に当て、下のスライダーで四角の幅をカードにぴったり合わせてください。端末ごとに一度だけ必要です。</p>
+      <div class="calib-stage"><div class="calib-card" id="calibCard"></div></div>
+      <input type="range" id="calibSlider" min="180" max="520" value="320">
+      <div class="row" style="margin-top:8px;">
+        <button id="calibConfirm">この幅で確定</button>
+      </div>
+    </div>
+
+    <div id="measurePane" class="card" style="display:none;">
+      <strong>指のサイズを測る</strong>
+      <p class="muted">リングをつける指をマス目の上に置き、円の内側が指幅にぴったり合うようスライダーで調整してください。</p>
+      <div class="gridbox" id="gridbox"><div class="ring" id="ringEl"></div></div>
+      <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
+      <div class="readout">
+        <div class="us" id="usOut">7</div>
+        <div class="mm" id="mmOut">直径 17.0mm</div>
+      </div>
+      <div id="learnBadge" class="badge" style="display:none;"></div>
+      <div class="row" style="margin-top:16px;">
+        <button id="saveEntry">この号数で登録</button>
+        <button class="ghost small" id="recalib">再キャリブレーション</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="account">
+    <div class="card">
+      <label for="nameInput">お名前（任意）</label>
+      <input type="text" id="nameInput" placeholder="登録名">
+    </div>
+
+    <div class="card">
+      <strong>学習補正</strong>
+      <p class="muted" id="learnText">まだ補正データがありません。実際に着けてみてサイズが違った場合は、下の記録から補正を登録してください。次回以降の測定に自動で反映されます。</p>
+    </div>
+
+    <div class="card">
+      <strong>測定履歴</strong>
+      <p class="muted">日付とサイズは記録として保持され、後から書き換えることはできません（誤登録防止のため、補正は追記として記録されます）。</p>
+      <div id="histList"></div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button id="navSizing" class="active">サイズ測定</button>
+  <button id="navAccount">アカウント情報</button>
+</nav>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const LS = { calib:'rs_calib_pxpermm', name:'rs_profile_name', hist:'rs_history' };
+
+  function safeGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function safeSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+  const SIZE_TABLE = [[3,14.1],[3.5,14.5],[4,14.9],[4.5,15.3],[5,15.7],[5.5,16.1],[6,16.5],
+    [6.5,16.9],[7,17.3],[7.5,17.7],[8,18.1],[8.5,18.5],[9,18.9],[9.5,19.4],[10,19.8],
+    [10.5,20.2],[11,20.6],[11.5,21.0],[12,21.4],[12.5,21.8],[13,22.2]];
+
+  function diameterToUS(mm){
+    if(mm<=SIZE_TABLE[0][1]) return SIZE_TABLE[0][0];
+    if(mm>=SIZE_TABLE[SIZE_TABLE.length-1][1]) return SIZE_TABLE[SIZE_TABLE.length-1][0];
+    for(let i=0;i<SIZE_TABLE.length-1;i++){
+      const [u1,m1]=SIZE_TABLE[i], [u2,m2]=SIZE_TABLE[i+1];
+      if(mm>=m1 && mm<=m2){
+        const t=(mm-m1)/(m2-m1);
+        const raw=u1+t*(u2-u1);
+        return Math.round(raw*2)/2;
+      }
+    }
+    return null;
+  }
+
+  function loadHistory(){ try{ return JSON.parse(safeGet(LS.hist)||'[]'); }catch(e){ return []; } }
+  function saveHistory(h){ safeSet(LS.hist, JSON.stringify(h)); }
+
+  function learnedOffset(history){
+    const diffs=[];
+    history.forEach(e=>{ (e.corrections||[]).forEach(c=>diffs.push(c.us - e.suggestedUS)); });
+    if(!diffs.length) return null;
+    const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;
+    return Math.round(avg*2)/2;
+  }
+
+  // ---- calibration ----
+  let pxPerMm = parseFloat(safeGet(LS.calib)) || null;
+  const calibSlider=$('calibSlider'), calibCard=$('calibCard');
+  function renderCalibCard(){ calibCard.style.width = calibSlider.value+'px'; }
+  calibSlider.addEventListener('input', renderCalibCard);
+  renderCalibCard();
+
+  $('calibConfirm').addEventListener('click', ()=>{
+    const widthPx = parseFloat(calibSlider.value);
+    pxPerMm = widthPx / 85.6;
+    safeSet(LS.calib, pxPerMm);
+    showMeasure();
+  });
+  $('recalib').addEventListener('click', ()=>{
+    $('calibPane').style.display='block';
+    $('measurePane').style.display='none';
+  });
+
+  function showMeasure(){
+    $('calibPane').style.display='none';
+    $('measurePane').style.display='block';
+    drawGrid();
+    updateRing();
+  }
+  if(pxPerMm) showMeasure();
+
+  // ---- grid & ring ----
+  const gridbox=$('gridbox'), ringEl=$('ringEl'), sizeSlider=$('sizeSlider');
+  function drawGrid(){
+    if(!pxPerMm) return;
+    const step = 5*pxPerMm; // 5mm grid
+    gridbox.style.backgroundImage =
+      `linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)`;
+    gridbox.style.backgroundSize = `${step}px ${step}px`;
+  }
+
+  function currentOffset(){
+    const off = learnedOffset(loadHistory());
+    return off || 0;
+  }
+
+  function updateRing(){
+    const mm = parseFloat(sizeSlider.value);
+    const px = pxPerMm ? mm*pxPerMm : mm*8;
+    ringEl.style.width = px+'px';
+    ringEl.style.height = px+'px';
+    const baseUS = diameterToUS(mm);
+    const off = currentOffset();
+    const finalUS = Math.round((baseUS+off)*2)/2;
+    $('usOut').textContent = 'US ' + finalUS;
+    $('mmOut').textContent = '直径 ' + mm.toFixed(1) + 'mm';
+    const badge=$('learnBadge');
+    if(off){
+      badge.style.display='inline-block';
+      badge.textContent = `学習補正 ${off>0?'+':''}${off}号 適用済み（基準 US ${baseUS}）`;
+    } else {
+      badge.style.display='none';
+    }
+    sizeSlider.dataset.baseUs = baseUS;
+    sizeSlider.dataset.finalUs = finalUS;
+  }
+  sizeSlider.addEventListener('input', updateRing);
+
+  $('saveEntry').addEventListener('click', ()=>{
+    const h=loadHistory();
+    h.unshift({
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      date: new Date().toISOString(),
+      diameterMm: parseFloat(sizeSlider.value),
+      suggestedUS: parseFloat(sizeSlider.dataset.baseUs),
+      registeredUS: parseFloat(sizeSlider.dataset.finalUs),
+      corrections: []
+    });
+    saveHistory(h);
+    renderHistory();
+    navTo('account');
+  });
+
+  // ---- account / history ----
+  const nameInput=$('nameInput');
+  nameInput.value = safeGet(LS.name) || '';
+  nameInput.addEventListener('change', ()=> safeSet(LS.name, nameInput.value));
+
+  function fmtDate(iso){
+    const d=new Date(iso);
+    return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function renderHistory(){
+    const h=loadHistory();
+    const off=learnedOffset(h);
+    $('learnText').textContent = off
+      ? `過去の補正記録から、平均で ${off>0?'+':''}${off}号 のずれが学習されています。次回の測定に自動で反映されます。`
+      : 'まだ補正データがありません。実際に着けてみてサイズが違った場合は、下の記録から補正を登録してください。次回以降の測定に自動で反映されます。';
+
+    const list=$('histList');
+    if(!h.length){ list.innerHTML='<div class="empty">まだ記録がありません</div>'; return; }
+    list.innerHTML='';
+    h.forEach(entry=>{
+      const div=document.createElement('div');
+      div.className='hist-item';
+      const lastCorrection = entry.corrections.length ? entry.corrections[entry.corrections.length-1] : null;
+      div.innerHTML = `
+        <div class="hist-top">
+          <span class="hist-date">${fmtDate(entry.date)}</span>
+          <span class="hist-size">US ${entry.registeredUS}</span>
+        </div>
+        <div class="hist-sub">実測 ${entry.diameterMm.toFixed(1)}mm</div>
+        ${lastCorrection ? `<div class="correct-note">実測補正: US ${lastCorrection.us}（${fmtDate(lastCorrection.date)}）</div>` : ''}
+        <div class="row" style="margin-top:8px;">
+          <button class="ghost small" data-act="half" data-id="${entry.id}">+0.5号</button>
+          <button class="ghost small" data-act="one" data-id="${entry.id}">+1号</button>
+        </div>
+        <div class="manual-box">
+          <input type="number" step="0.5" placeholder="手入力" data-manual="${entry.id}">
+          <button class="ghost small" data-act="manual" data-id="${entry.id}">登録</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  $('histList').addEventListener('click', (e)=>{
+    const btn=e.target.closest('button[data-act]');
+    if(!btn) return;
+    const id=btn.dataset.id;
+    const h=loadHistory();
+    const entry=h.find(x=>x.id===id);
+    if(!entry) return;
+    const base = entry.corrections.length ? entry.corrections[entry.corrections.length-1].us : entry.registeredUS;
+    let newUS=null;
+    if(btn.dataset.act==='half') newUS = base+0.5;
+    if(btn.dataset.act==='one') newUS = base+1;
+    if(btn.dataset.act==='manual'){
+      const input=document.querySelector(`input[data-manual="${id}"]`);
+      const v=parseFloat(input.value);
+      if(!isNaN(v)) newUS=v;
+    }
+    if(newUS!=null){
+      entry.corrections.push({date:new Date().toISOString(), us:newUS});
+      saveHistory(h);
+      renderHistory();
+      updateRing();
+    }
+  });
+
+  // ---- nav ----
+  function navTo(name){
+    ['sizing','account'].forEach(s=>$(s).classList.toggle('active', s===name));
+    $('navSizing').classList.toggle('active', name==='sizing');
+    $('navAccount').classList.toggle('active', name==='account');
+    $('subhead').textContent = name==='sizing'
+      ? '画面上で指のサイズを測り、USリングサイズを算出します'
+      : '登録名・測定履歴・学習補正の確認';
+    if(name==='account') renderHistory();
+  }
+  $('navSizing').addEventListener('click', ()=>navTo('sizing'));
+  $('navAccount').addEventListener('click', ()=>navTo('account'));
+
+  renderHistory();
+
+  // ---- Android install prompt ----
+  let deferredPrompt = null;
+  const installBtn = $('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    installBtn.style.display = 'none';
+    try { await deferredPrompt.prompt(); } catch(e) {}
+    deferredPrompt = null;
+  });
+  window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    });
+  }
+})();
+</script>
+</body>
+</html>
