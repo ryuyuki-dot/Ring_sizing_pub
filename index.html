@@ -66,15 +66,20 @@ section.active{display:block;}
   box-shadow:0 6px 18px rgba(0,0,0,0.25);
 }
 
-/* grid & ring */
+/* grid & caliper */
 .gridbox{
   border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:16px 0;
-  height:230px; position:relative; display:flex; align-items:center; justify-content:center;
+  height:170px; position:relative;
   background-color:var(--surface2);
 }
-.gridbox .ring{
-  border:3px solid var(--accent); border-radius:50%; background:rgba(201,161,92,0.06);
-  transition:width .05s linear, height .05s linear;
+.gridbox .center-line{
+  position:absolute; top:0; bottom:0; left:50%; width:1px; background:var(--line);
+}
+.gridbox .caliper-fill{
+  position:absolute; top:0; bottom:0;
+  background:rgba(201,161,92,0.10);
+  border-left:2px solid var(--accent); border-right:2px solid var(--accent);
+  transition:left .05s linear, width .05s linear;
 }
 input[type=range]{
   width:100%; -webkit-appearance:none; appearance:none; height:34px; background:transparent;
@@ -160,12 +165,12 @@ nav button.active{color:var(--accent); background:var(--line);}
 
     <div id="measurePane" class="card" style="display:none;">
       <strong>指のサイズを測る</strong>
-      <p class="muted">リングをつける指をマス目の上に置き、円の内側が指幅にぴったり合うようスライダーで調整してください。</p>
-      <div class="gridbox" id="gridbox"><div class="ring" id="ringEl"></div></div>
+      <p class="muted">画面の明るさを最大にし、リングをつける指を横向きにして画面の上に乗せてください。指の側面から画面の光がうっすら透けて見える両端に、スライダーで金色のラインを合わせてください。</p>
+      <div class="gridbox" id="gridbox"><div class="center-line"></div><div class="caliper-fill" id="caliperFill"></div></div>
       <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
       <div class="readout">
         <div class="us" id="usOut">7</div>
-        <div class="mm" id="mmOut">直径 17.0mm</div>
+        <div class="mm" id="mmOut">指の幅 17.0mm</div>
       </div>
       <div id="learnBadge" class="badge" style="display:none;"></div>
       <div class="row" style="margin-top:16px;">
@@ -262,8 +267,8 @@ nav button.active{color:var(--accent); background:var(--line);}
   }
   if(pxPerMm) showMeasure();
 
-  // ---- grid & ring ----
-  const gridbox=$('gridbox'), ringEl=$('ringEl'), sizeSlider=$('sizeSlider');
+  // ---- grid & caliper ----
+  const gridbox=$('gridbox'), caliperFill=$('caliperFill'), sizeSlider=$('sizeSlider');
   function drawGrid(){
     if(!pxPerMm) return;
     const step = 5*pxPerMm; // 5mm grid
@@ -280,13 +285,15 @@ nav button.active{color:var(--accent); background:var(--line);}
   function updateRing(){
     const mm = parseFloat(sizeSlider.value);
     const px = pxPerMm ? mm*pxPerMm : mm*8;
-    ringEl.style.width = px+'px';
-    ringEl.style.height = px+'px';
+    const boxWidth = gridbox.clientWidth || 300;
+    const left = Math.max(0, (boxWidth-px)/2);
+    caliperFill.style.left = left+'px';
+    caliperFill.style.width = px+'px';
     const baseUS = diameterToUS(mm);
     const off = currentOffset();
     const finalUS = Math.round((baseUS+off)*2)/2;
     $('usOut').textContent = 'US ' + finalUS;
-    $('mmOut').textContent = '直径 ' + mm.toFixed(1) + 'mm';
+    $('mmOut').textContent = '指の幅 ' + mm.toFixed(1) + 'mm';
     const badge=$('learnBadge');
     if(off){
       badge.style.display='inline-block';
