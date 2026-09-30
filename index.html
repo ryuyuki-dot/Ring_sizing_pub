@@ -186,6 +186,14 @@ nav button.active{color:var(--accent); background:var(--line);}
         <button id="saveEntry">保存</button>
       </div>
       <div id="learnBadge" class="badge" style="display:none;"></div>
+      <button class="ghost small" id="correctToggle" style="margin-top:12px;">数値がズレている場合はこちら</button>
+      <div id="correctBox" style="display:none; margin-top:10px;">
+        <p class="muted" style="margin:0 0 8px;">今の見た目の幅のまま、定規などで実際に測った指の幅(mm)を入力してください。今後の表示すべてに反映されます。</p>
+        <div class="manual-box">
+          <input type="number" step="0.1" id="correctInput" placeholder="例: 16.0">
+          <button class="small" id="correctApply">補正する</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -262,7 +270,11 @@ nav button.active{color:var(--accent); background:var(--line);}
   // ---- calibration ----
   let pxPerMm = parseFloat(safeGet(LS.calib)) || null;
   const calibSlider=$('calibSlider'), calibCard=$('calibCard');
-  function renderCalibCard(){ calibCard.style.width = calibSlider.value+'px'; }
+  function renderCalibCard(){
+    const w = parseFloat(calibSlider.value);
+    calibCard.style.width = w+'px';
+    calibCard.style.height = (w*(53.98/85.6))+'px'; // fallback for browsers without CSS aspect-ratio support
+  }
   calibSlider.addEventListener('input', renderCalibCard);
   renderCalibCard();
 
@@ -331,6 +343,24 @@ nav button.active{color:var(--accent); background:var(--line);}
   }
   $('stepDown').addEventListener('click', ()=>stepSlider(-0.1));
   $('stepUp').addEventListener('click', ()=>stepSlider(0.1));
+
+  $('correctToggle').addEventListener('click', ()=>{
+    const box=$('correctBox');
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+  });
+  $('correctApply').addEventListener('click', ()=>{
+    const trueMm = parseFloat($('correctInput').value);
+    if(!trueMm || trueMm<=0) return;
+    const currentPx = caliperFill.offsetWidth || (pxPerMm ? parseFloat(sizeSlider.value)*pxPerMm : null);
+    if(!currentPx) return;
+    pxPerMm = currentPx / trueMm;
+    safeSet(LS.calib, pxPerMm);
+    sizeSlider.value = trueMm.toFixed(1);
+    drawGrid();
+    updateRing();
+    $('correctBox').style.display='none';
+    $('correctInput').value='';
+  });
 
   $('saveEntry').addEventListener('click', ()=>{
     const h=loadHistory();
