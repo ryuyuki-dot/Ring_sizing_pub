@@ -81,6 +81,12 @@ section.active{display:block;}
   border-left:2px solid var(--accent); border-right:2px solid var(--accent);
   transition:left .05s linear, width .05s linear;
 }
+.slider-row{display:flex; align-items:center; gap:10px;}
+.slider-row input[type=range]{flex:1;}
+.stepper{
+  flex:0 0 auto; width:38px; height:38px; border-radius:50%; padding:0;
+  font-size:19px; line-height:1; display:flex; align-items:center; justify-content:center;
+}
 input[type=range]{
   width:100%; -webkit-appearance:none; appearance:none; height:34px; background:transparent;
 }
@@ -94,7 +100,7 @@ input[type=range]::-moz-range-thumb{
   width:20px; height:20px; border-radius:50%; background:var(--accent); border:3px solid var(--surface);
 }
 
-.readout{display:flex; align-items:baseline; gap:10px; margin:14px 0 4px; flex-wrap:wrap;}
+.readout{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 4px; flex-wrap:wrap;}
 .readout .us{font-family:'Fraunces',serif; font-size:44px; line-height:1; color:var(--accent);}
 .readout .mm{font-size:14px; color:var(--muted);}
 .badge{
@@ -167,25 +173,23 @@ nav button.active{color:var(--accent); background:var(--line);}
       <strong>指のサイズを測る</strong>
       <p class="muted">画面の明るさを最大にし、リングをつける指を横向きにして画面の上に乗せてください。指の側面から画面の光がうっすら透けて見える両端に、スライダーで金色のラインを合わせてください。</p>
       <div class="gridbox" id="gridbox"><div class="center-line"></div><div class="caliper-fill" id="caliperFill"></div></div>
-      <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
+      <div class="slider-row">
+        <button class="stepper ghost" id="stepDown" aria-label="細かく縮める">−</button>
+        <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
+        <button class="stepper ghost" id="stepUp" aria-label="細かく広げる">＋</button>
+      </div>
       <div class="readout">
-        <div class="us" id="usOut">7</div>
-        <div class="mm" id="mmOut">指の幅 17.0mm</div>
+        <div>
+          <div class="us" id="usOut">7</div>
+          <div class="mm" id="mmOut">指の幅 17.0mm</div>
+        </div>
+        <button id="saveEntry">保存</button>
       </div>
       <div id="learnBadge" class="badge" style="display:none;"></div>
-      <div class="row" style="margin-top:16px;">
-        <button id="saveEntry">この号数で登録</button>
-        <button class="ghost small" id="recalib">再キャリブレーション</button>
-      </div>
     </div>
   </section>
 
-  <section id="account">
-    <div class="card">
-      <label for="nameInput">お名前（任意）</label>
-      <input type="text" id="nameInput" placeholder="登録名">
-    </div>
-
+  <section id="records">
     <div class="card">
       <strong>学習補正</strong>
       <p class="muted" id="learnText">まだ補正データがありません。実際に着けてみてサイズが違った場合は、下の記録から補正を登録してください。次回以降の測定に自動で反映されます。</p>
@@ -197,11 +201,25 @@ nav button.active{color:var(--accent); background:var(--line);}
       <div id="histList"></div>
     </div>
   </section>
+
+  <section id="settings">
+    <div class="card">
+      <label for="nameInput">お名前（任意）</label>
+      <input type="text" id="nameInput" placeholder="登録名">
+    </div>
+
+    <div class="card">
+      <strong>キャリブレーション</strong>
+      <p class="muted">端末を変えた場合や、測定した直径が実際とずれている場合は再度キャリブレーションしてください。</p>
+      <button class="ghost" id="recalib">再キャリブレーション</button>
+    </div>
+  </section>
 </main>
 
 <nav>
   <button id="navSizing" class="active">サイズ測定</button>
-  <button id="navAccount">アカウント情報</button>
+  <button id="navRecords">記録</button>
+  <button id="navSettings">設定</button>
 </nav>
 
 <script>
@@ -255,6 +273,7 @@ nav button.active{color:var(--accent); background:var(--line);}
     showMeasure();
   });
   $('recalib').addEventListener('click', ()=>{
+    navTo('sizing');
     $('calibPane').style.display='block';
     $('measurePane').style.display='none';
   });
@@ -265,7 +284,6 @@ nav button.active{color:var(--accent); background:var(--line);}
     drawGrid();
     updateRing();
   }
-  if(pxPerMm) showMeasure();
 
   // ---- grid & caliper ----
   const gridbox=$('gridbox'), caliperFill=$('caliperFill'), sizeSlider=$('sizeSlider');
@@ -306,6 +324,14 @@ nav button.active{color:var(--accent); background:var(--line);}
   }
   sizeSlider.addEventListener('input', updateRing);
 
+  function stepSlider(delta){
+    const v = Math.min(24, Math.max(10, parseFloat(sizeSlider.value)+delta));
+    sizeSlider.value = v.toFixed(1);
+    updateRing();
+  }
+  $('stepDown').addEventListener('click', ()=>stepSlider(-0.1));
+  $('stepUp').addEventListener('click', ()=>stepSlider(0.1));
+
   $('saveEntry').addEventListener('click', ()=>{
     const h=loadHistory();
     h.unshift({
@@ -318,7 +344,7 @@ nav button.active{color:var(--accent); background:var(--line);}
     });
     saveHistory(h);
     renderHistory();
-    navTo('account');
+    navTo('records');
   });
 
   // ---- account / history ----
@@ -391,18 +417,24 @@ nav button.active{color:var(--accent); background:var(--line);}
 
   // ---- nav ----
   function navTo(name){
-    ['sizing','account'].forEach(s=>$(s).classList.toggle('active', s===name));
+    ['sizing','records','settings'].forEach(s=>$(s).classList.toggle('active', s===name));
     $('navSizing').classList.toggle('active', name==='sizing');
-    $('navAccount').classList.toggle('active', name==='account');
-    $('subhead').textContent = name==='sizing'
-      ? '画面上で指のサイズを測り、USリングサイズを算出します'
-      : '登録名・測定履歴・学習補正の確認';
-    if(name==='account') renderHistory();
+    $('navRecords').classList.toggle('active', name==='records');
+    $('navSettings').classList.toggle('active', name==='settings');
+    const subheads = {
+      sizing: '画面上で指のサイズを測り、USリングサイズを算出します',
+      records: '測定履歴と学習補正の確認',
+      settings: 'お名前とキャリブレーションの設定'
+    };
+    $('subhead').textContent = subheads[name];
+    if(name==='records') renderHistory();
   }
   $('navSizing').addEventListener('click', ()=>navTo('sizing'));
-  $('navAccount').addEventListener('click', ()=>navTo('account'));
+  $('navRecords').addEventListener('click', ()=>navTo('records'));
+  $('navSettings').addEventListener('click', ()=>navTo('settings'));
 
   renderHistory();
+  if(pxPerMm) showMeasure(); // deferred until all consts/functions above are initialized
 
   // ---- Android install prompt ----
   let deferredPrompt = null;
