@@ -67,9 +67,10 @@ section.active{display:block;}
 }
 
 /* grid & caliper */
+.measure-row{display:flex; gap:16px; justify-content:center; align-items:stretch; margin:16px 0;}
 .gridbox{
-  border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:16px 0;
-  height:170px; position:relative;
+  border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  width:180px; height:300px; position:relative; flex:0 0 auto;
   background-color:var(--surface2);
 }
 .gridbox .center-line{
@@ -81,8 +82,17 @@ section.active{display:block;}
   border-left:2px solid var(--accent); border-right:2px solid var(--accent);
   transition:left .05s linear, width .05s linear;
 }
-.slider-row{display:flex; align-items:center; gap:10px;}
-.slider-row input[type=range]{flex:1;}
+/* slider sits beside the finger area, not underneath it, so a resting finger
+   never overlaps the controls */
+.slider-col{
+  display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+  width:56px; flex:0 0 auto; padding:4px 0;
+}
+.vertical-slider-wrap{ width:56px; height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.vertical-slider-wrap input[type=range]{
+  width:220px; height:40px;
+  transform:rotate(-90deg);
+}
 .stepper{
   flex:0 0 auto; width:38px; height:38px; border-radius:50%; padding:0;
   font-size:19px; line-height:1; display:flex; align-items:center; justify-content:center;
@@ -174,12 +184,16 @@ nav button.active{color:var(--accent); background:var(--line);}
       <label for="personName" style="margin-top:2px;">測定する人</label>
       <input type="text" id="personName" list="personNameList" placeholder="名前を入力">
       <datalist id="personNameList"></datalist>
-      <p class="muted" style="margin-top:14px;">画面の明るさを最大にし、リングをつける指を横向きにして画面の上に乗せてください。指の側面から画面の光がうっすら透けて見える両端に、スライダーで金色のラインを合わせてください。</p>
-      <div class="gridbox" id="gridbox"><div class="center-line"></div><div class="caliper-fill" id="caliperFill"></div></div>
-      <div class="slider-row">
-        <button class="stepper ghost" id="stepDown" aria-label="細かく縮める">−</button>
-        <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
-        <button class="stepper ghost" id="stepUp" aria-label="細かく広げる">＋</button>
+      <p class="muted" style="margin-top:14px;">画面の明るさを最大にし、リングをつける指を縦向き（指先が画面の上を向くよう）にして、帯の上に置いてください。指の側面から画面の光がうっすら透けて見える両端に、横のつまみでラインを合わせてください。指を置いたまま、反対の手でつまみを操作できます。</p>
+      <div class="measure-row">
+        <div class="gridbox" id="gridbox"><div class="center-line"></div><div class="caliper-fill" id="caliperFill"></div></div>
+        <div class="slider-col">
+          <button class="stepper ghost" id="stepUp" aria-label="広げる">＋</button>
+          <div class="vertical-slider-wrap">
+            <input type="range" id="sizeSlider" min="10" max="24" step="0.1" value="17">
+          </div>
+          <button class="stepper ghost" id="stepDown" aria-label="縮める">−</button>
+        </div>
       </div>
       <div class="readout">
         <div>
