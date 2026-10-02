@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ring-sizer-v6';
+const CACHE_NAME = 'ring-sizer-v7';
 const APP_SHELL = [
   './',
   './index.html',

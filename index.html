@@ -88,10 +88,11 @@ section.active{display:block;}
   display:flex; flex-direction:column; align-items:center; justify-content:space-between;
   width:56px; flex:0 0 auto; padding:4px 0;
 }
-.vertical-slider-wrap{ width:56px; height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.vertical-slider-wrap{ width:56px; height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; }
 .vertical-slider-wrap input[type=range]{
   width:220px; height:40px;
   transform:rotate(-90deg);
+  touch-action:none; /* stop the browser from reading a vertical drag on this control as a page scroll */
 }
 .stepper{
   flex:0 0 auto; width:38px; height:38px; border-radius:50%; padding:0;
